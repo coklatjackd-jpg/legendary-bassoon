@@ -4,7 +4,6 @@ import {
   Briefcase,
   Bookmark,
   Check,
-  Download,
   Eye,
   FileText,
   FilePenLine,
@@ -316,7 +315,6 @@ function App() {
         </div>
 
         <div className="sidebar-bottom">
-          {activeView !== 'saved' && <><span className="save-status">{saved ? <><Check size={15} /> Disimpan</> : <><Save size={15} /> Menyimpan...</>}</span><button className="button button-ghost" onClick={saveCurrentDocument}><Bookmark size={16} /> {savedDocumentId ? 'Kemas kini senarai' : 'Simpan ke list'}</button>{activeView === 'resume' && <button className="button button-ghost" onClick={resetResume}><RotateCcw size={16} /> Reset</button>}<button className="button button-share" onClick={() => setShareOpen(true)}><Link2 size={16} /> Kongsi</button><button className="button button-primary" onClick={() => window.print()}><Download size={16} /> PDF / Print</button></>}
         </div>
       </aside>
 
@@ -378,7 +376,18 @@ function App() {
         </aside>
 
         {activeView !== 'saved' && <section className="preview-panel">
-          <div className="preview-toolbar"><div className="preview-title"><Eye size={16} /><span>Live preview</span></div><span className="a4-label">A4 · 1 halaman</span></div>
+          <div className="preview-toolbar">
+            <div className="preview-title"><Eye size={16} /><span>Live preview</span></div>
+            <div className="preview-nav-actions">
+              <span className="a4-label">A4 · 1 halaman</span>
+              <div className="preview-buttons">
+                <button className="button button-ghost icon-only-button" title={savedDocumentId ? 'Kemas kini senarai' : 'Simpan ke list'} onClick={saveCurrentDocument}><Bookmark size={16} /></button>
+                {activeView === 'resume' && <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResume}><RotateCcw size={16} /></button>}
+                <button className="button button-share button-icon-no-bg icon-only-button" title="Kongsi" onClick={() => setShareOpen(true)}><Link2 size={16} /></button>
+                <button className="button button-primary button-icon-no-bg icon-only-button" title="PDF / Print" onClick={() => window.print()}><Printer size={16} /></button>
+              </div>
+            </div>
+          </div>
           <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
           <p className="preview-note"><Printer size={14} /> Gunakan PDF / Print untuk menyimpan salinan berkualiti tinggi.</p>
         </section>}

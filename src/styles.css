@@ -133,7 +133,15 @@ button { cursor: pointer; }
 .preview-panel { background: #e9eef3; padding: 38px 48px 46px; overflow: auto; }
 .preview-toolbar { display: flex; align-items: center; justify-content: space-between; color: #777e77; margin-bottom: 20px; font-size: 11px; }
 .preview-title { display: flex; gap: 8px; align-items: center; font-weight: 600; }
-.a4-label { font: 10px var(--font-stack); }
+.preview-nav-actions { display: flex; align-items: center; gap: 14px; }
+.preview-buttons { display: flex; align-items: center; gap: 8px; }
+.a4-label { font: 10px var(--font-stack); white-space: nowrap; }
+.preview-buttons .button { padding: 8px 11px; font-size: 11px; }
+.preview-buttons .button-share { color: var(--accent); background: #fff; border-color: color-mix(in srgb, var(--accent) 35%, white); }
+.icon-only-button { width: 38px; min-width: 38px; height: 38px; padding: 0; border-radius: 50%; justify-content: center; }
+.icon-only-button svg { width: 16px; height: 16px; }
+.button-icon-no-bg { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.button-icon-no-bg svg { color: var(--accent); }
 .paper-wrap { display: flex; justify-content: center; min-width: 650px; }
 .resume-paper { width: 794px; min-height: 1123px; padding: 67px 68px 48px; background: var(--paper); box-shadow: 0 13px 35px rgba(45, 54, 42, .1); color: #303430; position: relative; }
 .resume-header { border-bottom: 1px solid #dfe2dc; padding-bottom: 30px; display: flex; justify-content: space-between; gap: 30px; }
