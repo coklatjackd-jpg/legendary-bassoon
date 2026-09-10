@@ -172,7 +172,9 @@ function App() {
   const [savedDocumentId, setSavedDocumentId] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [resignationTemplate, setResignationTemplate] = useState('formal')
+  const [offerLetterTemplate, setOfferLetterTemplate] = useState('formal')
   const [resignationTab, setResignationTab] = useState('content')
+  const [offerLetterTab, setOfferLetterTab] = useState('content')
   const [template, setTemplate] = useState('editorial')
   const [accent, setAccent] = useState(colors[0].value)
   const [resignationAccent, setResignationAccent] = useState(colors[0].value)
@@ -358,7 +360,7 @@ function App() {
   }
 
   const goToSection = (id) => {
-    const setTab = activeView === 'resume' ? setActiveTab : setResignationTab
+    const setTab = activeView === 'resume' ? setActiveTab : activeView === 'offerLetter' ? setOfferLetterTab : setResignationTab
     setSidebarOpen(false)
     if (id === 'design') {
       setTab('design')
@@ -368,7 +370,7 @@ function App() {
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
-  const currentTab = activeView === 'resume' ? activeTab : resignationTab
+  const currentTab = activeView === 'resume' ? activeTab : activeView === 'offerLetter' ? offerLetterTab : resignationTab
   const sectionNav = activeView === 'resume'
     ? [
         { id: 'sec-profile', label: 'Profil utama', icon: UserRound },
@@ -377,7 +379,13 @@ function App() {
         { id: 'sec-skills', label: 'Kemahiran', icon: ListChecks },
         { id: 'design', label: 'Gaya & warna', icon: Palette },
       ]
-    : [
+    : activeView === 'offerLetter'
+      ? [
+          { id: 'sec-offer-letter-info', label: 'Maklumat surat', icon: Info },
+          { id: 'sec-offer-letter-content', label: 'Isi kandungan', icon: MessageSquareText },
+          { id: 'design', label: 'Gaya surat', icon: Palette },
+        ]
+      : [
         { id: 'sec-info', label: 'Maklumat surat', icon: Info },
         { id: 'sec-reason', label: 'Alasan ringkas', icon: MessageSquareText },
         { id: 'design', label: 'Gaya surat', icon: Palette },
@@ -462,7 +470,7 @@ function App() {
               <div className="section-label"><span>04</span><h2>Kemahiran</h2></div>
               <label className="field full-field"><span>Asingkan dengan koma</span><input value={resume.skills.join(', ')} onChange={(event) => update('skills', event.target.value.split(',').map((skill) => skill.trim()).filter(Boolean))} /></label>
             </section>
-          </div> : <DesignPanel template={template} setTemplate={setTemplate} accent={accent} setAccent={setAccent} />}</> : activeView === 'offerLetter' ? <OfferLetterEditor offerLetter={offerLetter} update={updateOfferLetter} /> : <ResignationEditorTabs resignation={resignation} update={updateResignation} template={resignationTemplate} setTemplate={setResignationTemplate} accent={resignationAccent} setAccent={setResignationAccent} activeTab={resignationTab} setActiveTab={setResignationTab} />}
+          </div> : <DesignPanel template={template} setTemplate={setTemplate} accent={accent} setAccent={setAccent} />}</> : activeView === 'offerLetter' ? <OfferLetterEditor offerLetter={offerLetter} update={updateOfferLetter} template={offerLetterTemplate} setTemplate={setOfferLetterTemplate} accent={accent} setAccent={setAccent} activeTab={offerLetterTab} setActiveTab={setOfferLetterTab} /> : <ResignationEditorTabs resignation={resignation} update={updateResignation} template={resignationTemplate} setTemplate={setResignationTemplate} accent={resignationAccent} setAccent={setResignationAccent} activeTab={resignationTab} setActiveTab={setResignationTab} />}
           </>}
         </aside>
 
@@ -489,7 +497,7 @@ function App() {
               </div>
             </div>
           </div>
-          <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : activeView === 'offerLetter' ? <OfferLetterPreview offerLetter={offerLetter} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
+          <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : activeView === 'offerLetter' ? <OfferLetterPreview offerLetter={offerLetter} template={offerLetterTemplate} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
           <p className="preview-note"><Printer size={14} /> Gunakan PDF / Print untuk menyimpan salinan berkualiti tinggi.</p>
         </section>}
       </main>
@@ -551,10 +559,15 @@ function ResignationPreview({ resignation, template, accent }) {
   return <article className={`resignation-paper resignation-${template}`} style={{ '--accent': accent }}><div className="letter-top"><span>SURAT LETAK JAWATAN</span><span>{resignation.date}</span></div><div className="letter-content"><p>{resignation.manager}</p><p>{resignation.company}</p><p className="letter-subject">Perkara: Notis peletakan jawatan</p><p>Dengan hormatnya saya, <strong>{resignation.fullName}</strong>, yang memegang jawatan sebagai <strong>{resignation.role}</strong> di {resignation.company}, ingin mengemukakan notis peletakan jawatan saya.</p><p>Peletakan jawatan ini berkuat kuasa dengan tempoh notis <strong>{resignation.notice}</strong>. Hari terakhir saya bekerja adalah pada <strong>{resignation.lastDay}</strong>.</p><p>{resignation.reason}</p><p>Saya bersedia membantu proses serah tugas bagi memastikan peralihan tanggungjawab berjalan dengan lancar.</p><p>Terima kasih atas segala kerjasama dan sokongan yang diberikan.</p><p>Yang benar,</p><div className="signature-space" /><p className="signature-name"><strong>{resignation.fullName}</strong><br />{resignation.role}</p></div><footer className="letter-footer"><span>{resignation.fullName}</span><span>{resignation.company}</span></footer></article>
 }
 
-function OfferLetterEditor({ offerLetter, update }) {
+function OfferLetterEditor({ offerLetter, update, template, setTemplate, accent, setAccent, activeTab, setActiveTab }) {
   return <div className="resignation-editor">
     <div className="panel-heading"><div><p className="eyebrow">Letter builder</p><h1>Offer Letter yang profesional.</h1></div><div className="profile-chip"><FilePenLine size={16} /></div></div>
     <p className="editor-intro">Lengkapkan maklumat tawaran kerja anda di bawah.</p>
+    <div className="tabs" role="tablist">
+      <button className={activeTab === 'content' ? 'tab active' : 'tab'} onClick={() => setActiveTab('content')}>Kandungan</button>
+      <button className={activeTab === 'design' ? 'tab active' : 'tab'} onClick={() => setActiveTab('design')}>Gaya</button>
+    </div>
+    {activeTab === 'content' ? <>
     <section className="form-section" id="sec-offer-letter-info">
       <div className="section-label"><span>01</span><h2>Maklumat surat</h2></div>
       <div className="field-grid">
@@ -575,11 +588,15 @@ function OfferLetterEditor({ offerLetter, update }) {
       <label className="field full-field"><span>Perenggan utama</span><textarea value={offerLetter.body} onChange={(event) => update('body', event.target.value)} rows="5" /></label>
       <label className="field full-field"><span>Penutup</span><textarea value={offerLetter.closing} onChange={(event) => update('closing', event.target.value)} rows="3" /></label>
     </section>
+    </> : <>
+      <section className="form-section"><div className="section-label"><span>01</span><h2>Pilih gaya surat</h2></div><div className="template-list">{resignationTemplates.map((item) => <button key={item.id} className={`template-option ${template === item.id ? 'selected' : ''}`} onClick={() => setTemplate(item.id)}><span className={`letter-style-swatch ${item.id}`}><FilePenLine size={18} /></span><span><strong>{item.label}</strong><small>{item.description}</small></span>{template === item.id && <Check size={16} className="template-check" />}</button>)}</div></section>
+      <section className="form-section"><div className="section-label"><span>02</span><h2>Warna aksen</h2></div><div className="color-grid">{colors.map((color) => <button key={color.value} className={`color-option ${accent === color.value ? 'selected' : ''}`} style={{ '--swatch': color.value }} onClick={() => setAccent(color.value)} title={color.name}><span />{accent === color.value && <Check size={14} />}</button>)}</div><p className="design-tip">Warna digunakan pada garis, tajuk dan aksen utama offer letter.</p></section>
+    </>}
   </div>
 }
 
-function OfferLetterPreview({ offerLetter, accent }) {
-  return <article className="resignation-paper resignation-formal" style={{ '--accent': accent }}>
+function OfferLetterPreview({ offerLetter, template, accent }) {
+  return <article className={`resignation-paper resignation-${template}`} style={{ '--accent': accent }}>
     <div className="letter-top"><span>OFFER LETTER</span><span>{offerLetter.date}</span></div>
     <div className="letter-content">
       <p className="letter-recipient">{offerLetter.manager}</p>
@@ -592,11 +609,6 @@ function OfferLetterPreview({ offerLetter, accent }) {
       <p>Yang benar,</p>
       <div className="signature-space" />
       <p className="signature-name"><strong>{offerLetter.fullName}</strong><br />{offerLetter.role}</p>
-      <div className="letter-contact-line">
-        <span>{offerLetter.email}</span>
-        <span>{offerLetter.phone}</span>
-        <span>{offerLetter.address}</span>
-      </div>
     </div>
     <footer className="letter-footer"><span>{offerLetter.fullName}</span><span>{offerLetter.company}</span></footer>
   </article>
