@@ -78,6 +78,21 @@ const initialResignation = {
   reason: 'Saya ingin meneruskan peluang baharu yang lebih selari dengan perkembangan kerjaya saya.',
 }
 
+const initialOfferLetter = {
+  fullName: 'Mohd Faizal bin Ahmad',
+  role: 'Pemandu Lori',
+  company: 'Syarikat Logistik ABC Sdn Bhd',
+  manager: 'Encik Rahman',
+  email: 'faizal.ahmad@email.com',
+  phone: '+60 13 456 7890',
+  address: 'No. 64, Jalan Mawar, Shah Alam, Selangor',
+  date: '6 September 2026',
+  subject: 'Penawaran jawatan Pemandu Lori',
+  intro: 'Dengan hormatnya, kami ingin mengesahkan tawaran jawatan Pemandu Lori di syarikat kami.',
+  body: 'Berdasarkan pengalaman dan kebolehan anda, syarikat kami ingin menawarkan jawatan Pemandu Lori dengan komitmen untuk menyumbang dalam penghantaran barangan sejuk beku serta kering secara selamat, tepat masa dan profesional.',
+  closing: 'Terima kasih di atas minat dan kesediaan anda. Kami berharap anda dapat menyertai pasukan kami dan menyumbang kepada kejayaan organisasi ini.',
+}
+
 const templates = [
   { id: 'editorial', label: 'Editorial', description: 'Tipografi ekspresif' },
   { id: 'classic', label: 'Classic', description: 'Kemas & profesional' },
@@ -121,10 +136,26 @@ function loadResignation() {
   }
 }
 
+function loadOfferLetter() {
+  try {
+    const hash = window.location.hash
+    if (hash.startsWith('#offerletter=')) return { ...initialOfferLetter, ...JSON.parse(decodeURIComponent(atob(hash.slice(13)))) }
+    const saved = localStorage.getItem('offer-letter-studio-data')
+    return saved ? { ...initialOfferLetter, ...JSON.parse(saved) } : initialOfferLetter
+  } catch {
+    return initialOfferLetter
+  }
+}
+
 function App() {
   const [resume, setResume] = useState(loadResume)
   const [resignation, setResignation] = useState(loadResignation)
-  const [activeView, setActiveView] = useState(() => window.location.hash.startsWith('#resignation=') ? 'resignation' : 'resume')
+  const [offerLetter, setOfferLetter] = useState(loadOfferLetter)
+  const [activeView, setActiveView] = useState(() => {
+    if (window.location.hash.startsWith('#resignation=')) return 'resignation'
+    if (window.location.hash.startsWith('#offerletter=')) return 'offerLetter'
+    return 'resume'
+  })
   const [savedDocuments, setSavedDocuments] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('resume-studio-saved-documents')) || []
@@ -143,7 +174,7 @@ function App() {
   const [saved, setSaved] = useState(true)
   const [shareOpen, setShareOpen] = useState(false)
   const [toast, setToast] = useState('')
-  const isSharedView = window.location.hash.startsWith('#resume=') || window.location.hash.startsWith('#resignation=')
+  const isSharedView = window.location.hash.startsWith('#resume=') || window.location.hash.startsWith('#resignation=') || window.location.hash.startsWith('#offerletter=')
 
   useEffect(() => {
     if (!saved) {
@@ -158,6 +189,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('resignation-studio-data', JSON.stringify(resignation))
   }, [resignation])
+
+  useEffect(() => {
+    localStorage.setItem('offer-letter-studio-data', JSON.stringify(offerLetter))
+  }, [offerLetter])
 
   useEffect(() => {
     localStorage.setItem('resume-studio-saved-documents', JSON.stringify(savedDocuments))
@@ -175,6 +210,7 @@ function App() {
   }
 
   const updateResignation = (key, value) => setResignation((current) => ({ ...current, [key]: value }))
+  const updateOfferLetter = (key, value) => setOfferLetter((current) => ({ ...current, [key]: value }))
 
       const updateListItem = (list, index, key, value) => {
     update(list, resume[list].map((item, itemIndex) => (itemIndex === index ? { ...item, [key]: value } : item)))
@@ -196,23 +232,23 @@ function App() {
     reader.readAsDataURL(file)
     event.target.value = ''
   }
-          <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
 
   const addExperience = () => update('experience', [...resume.experience, { company: 'Nama syarikat', role: 'Jawatan', period: '2020 — 2022', description: 'Terangkan sumbangan dan pencapaian anda.' }])
   const addEducation = () => update('education', [...resume.education, { school: 'Nama institusi', degree: 'Program pengajian', period: '2016 — 2020' }])
   const removeItem = (list, index) => update(list, resume[list].filter((_, itemIndex) => itemIndex !== index))
 
   const shareUrl = useMemo(() => {
-    const documentType = activeView === 'resume' ? 'resume' : 'resignation'
-    const documentData = activeView === 'resume' ? resume : resignation
+    const documentType = activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offerletter' : 'resignation'
+    const documentData = activeView === 'resume' ? resume : activeView === 'offerLetter' ? offerLetter : resignation
     const encoded = btoa(encodeURIComponent(JSON.stringify(documentData)))
     return `${window.location.origin}${window.location.pathname}#${documentType}=${encoded}`
-  }, [activeView, resume, resignation])
+  }, [activeView, resume, resignation, offerLetter])
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setToast(`Link ${activeView === 'resume' ? 'resume' : 'surat resign'} disalin ke clipboard`)
+      const docName = activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offer letter' : 'surat resign'
+      setToast(`Link ${docName} disalin ke clipboard`)
     } catch {
       setToast('Link sudah siap. Salin dari kotak share.')
     }
@@ -235,21 +271,34 @@ function App() {
     }
   }
 
+  const resetOfferLetter = () => {
+    if (window.confirm('Reset offer letter kepada contoh asal?')) {
+      setOfferLetter(initialOfferLetter)
+      setToast('Offer letter dikembalikan ke contoh asal')
+    }
+  }
+
   const saveCurrentDocument = () => {
-    const type = activeView === 'resume' ? 'resume' : 'resignation'
-    const data = type === 'resume' ? resume : resignation
-    const name = type === 'resume' ? (resume.fullName || 'Resume tanpa nama') : `${resignation.company || 'Surat resign'} · ${resignation.fullName || 'Tanpa nama'}`
-    const document = { id: savedDocumentId || `${type}-${Date.now()}`, type, name, data: JSON.parse(JSON.stringify(data)), template: type === 'resume' ? template : resignationTemplate, accent: type === 'resume' ? accent : resignationAccent, savedAt: new Date().toISOString() }
+    const type = activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offerLetter' : 'resignation'
+    const data = type === 'resume' ? resume : type === 'offerLetter' ? offerLetter : resignation
+    const name = type === 'resume'
+      ? (resume.fullName || 'Resume tanpa nama')
+      : type === 'offerLetter'
+        ? `${offerLetter.company || 'Offer Letter'} · ${offerLetter.fullName || 'Tanpa nama'}`
+        : `${resignation.company || 'Surat resign'} · ${resignation.fullName || 'Tanpa nama'}`
+    const document = { id: savedDocumentId || `${type}-${Date.now()}`, type, name, data: JSON.parse(JSON.stringify(data)), template: type === 'resume' ? template : type === 'offerLetter' ? 'formal' : resignationTemplate, accent: type === 'resume' ? accent : type === 'offerLetter' ? accent : resignationAccent, savedAt: new Date().toISOString() }
     setSavedDocuments((current) => savedDocumentId ? current.map((item) => item.id === savedDocumentId ? document : item) : [document, ...current])
     setResume(initialResume)
     setResignation(initialResignation)
+    setOfferLetter(initialOfferLetter)
     setTemplate('editorial')
     setResignationTemplate('formal')
     setResignationAccent(colors[0].value)
     setSaved(false)
     setSavedDocumentId(null)
     setActiveView('saved')
-    setToast(savedDocumentId ? 'Perubahan dikemas kini dalam senarai' : `${type === 'resume' ? 'Resume' : 'Surat resign'} disimpan dalam senarai`)
+    const docLabel = type === 'resume' ? 'Resume' : type === 'offerLetter' ? 'Offer Letter' : 'Surat resign'
+    setToast(savedDocumentId ? 'Perubahan dikemas kini dalam senarai' : `${docLabel} disimpan dalam senarai`)
   }
 
   const openSavedDocument = (document) => {
@@ -259,6 +308,10 @@ function App() {
       setAccent(document.accent || colors[0].value)
       setSaved(false)
       setActiveView('resume')
+    } else if (document.type === 'offerLetter') {
+      setOfferLetter({ ...initialOfferLetter, ...document.data })
+      setAccent(document.accent || colors[0].value)
+      setActiveView('offerLetter')
     } else {
       setResignation({ ...initialResignation, ...document.data })
       setResignationTemplate(document.template || 'formal')
@@ -318,6 +371,7 @@ function App() {
           <nav className="doc-switch">
             <button className={`sidebar-item ${activeView === 'resume' ? 'active' : ''}`} onClick={() => { setSavedDocumentId(null); setActiveView('resume'); setSidebarOpen(false) }}><FileText size={17} /><span><strong>Resume</strong><small>Edit & bina resume</small></span></button>
             <button className={`sidebar-item ${activeView === 'resignation' ? 'active' : ''}`} onClick={() => { setSavedDocumentId(null); setActiveView('resignation'); setSidebarOpen(false) }}><FilePenLine size={17} /><span><strong>Surat Resign</strong><small>Surat letak jawatan</small></span></button>
+            <button className={`sidebar-item ${activeView === 'offerLetter' ? 'active' : ''}`} onClick={() => { setSavedDocumentId(null); setActiveView('offerLetter'); setSidebarOpen(false) }}><FilePenLine size={17} /><span><strong>Offer Letter</strong><small>Surat tawaran kerja</small></span></button>
             <button className={`sidebar-item ${activeView === 'saved' ? 'active' : ''}`} onClick={() => { setActiveView('saved'); setSidebarOpen(false) }}><Bookmark size={17} /><span><strong>Save List</strong><small>{savedDocuments.length} dokumen disimpan</small></span></button>
           </nav>
 
@@ -380,7 +434,7 @@ function App() {
               <div className="section-label"><span>04</span><h2>Kemahiran</h2></div>
               <label className="field full-field"><span>Asingkan dengan koma</span><input value={resume.skills.join(', ')} onChange={(event) => update('skills', event.target.value.split(',').map((skill) => skill.trim()).filter(Boolean))} /></label>
             </section>
-          </div> : <DesignPanel template={template} setTemplate={setTemplate} accent={accent} setAccent={setAccent} />}</> : <ResignationEditorTabs resignation={resignation} update={updateResignation} template={resignationTemplate} setTemplate={setResignationTemplate} accent={resignationAccent} setAccent={setResignationAccent} activeTab={resignationTab} setActiveTab={setResignationTab} />}
+          </div> : <DesignPanel template={template} setTemplate={setTemplate} accent={accent} setAccent={setAccent} />}</> : activeView === 'offerLetter' ? <OfferLetterEditor offerLetter={offerLetter} update={updateOfferLetter} /> : <ResignationEditorTabs resignation={resignation} update={updateResignation} template={resignationTemplate} setTemplate={setResignationTemplate} accent={resignationAccent} setAccent={setResignationAccent} activeTab={resignationTab} setActiveTab={setResignationTab} />}
           </>}
         </aside>
 
@@ -395,6 +449,8 @@ function App() {
                 )}
                 {!isSharedView && (activeView === 'resume' ? (
                   <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResume}><RotateCcw size={16} /></button>
+                ) : activeView === 'offerLetter' ? (
+                  <button className="button button-ghost icon-only-button" title="Reset" onClick={resetOfferLetter}><RotateCcw size={16} /></button>
                 ) : (
                   <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResignation}><RotateCcw size={16} /></button>
                 ))}
@@ -405,31 +461,15 @@ function App() {
               </div>
             </div>
           </div>
-          <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
+          <div className={activeView === 'resume' ? 'paper-wrap' : 'letter-wrap'}>{activeView === 'resume' ? <ResumePreview resume={resume} template={template} accent={accent} /> : activeView === 'offerLetter' ? <OfferLetterPreview offerLetter={offerLetter} accent={accent} /> : <ResignationPreview resignation={resignation} template={resignationTemplate} accent={resignationAccent} />}</div>
           <p className="preview-note"><Printer size={14} /> Gunakan PDF / Print untuk menyimpan salinan berkualiti tinggi.</p>
         </section>}
       </main>
 
-      {shareOpen && <div className="modal-backdrop" onClick={() => setShareOpen(false)}><div className="share-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShareOpen(false)}><X size={18} /></button><div className="modal-icon"><Link2 size={21} /></div><p className="eyebrow">Share {activeView === 'resume' ? 'resume' : 'surat resign'}</p><h2>{activeView === 'resume' ? 'Resume' : 'Surat resign'} anda sedia untuk dikongsi.</h2><p className="modal-copy">Sesiapa yang mempunyai link ini boleh melihat {activeView === 'resume' ? 'resume' : 'surat resign'} anda. Data disimpan terus dalam link.</p><div className="share-input"><input value={shareUrl} readOnly /><button className="button button-primary" onClick={handleShare}>Salin link</button></div><span className="privacy-note"><Check size={14} /> Tiada akaun atau server diperlukan</span></div></div>}
+      {shareOpen && <div className="modal-backdrop" onClick={() => setShareOpen(false)}><div className="share-modal" onClick={(event) => event.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShareOpen(false)}><X size={18} /></button><div className="modal-icon"><Link2 size={21} /></div><p className="eyebrow">Share {activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offer letter' : 'surat resign'}</p><h2>{activeView === 'resume' ? 'Resume' : activeView === 'offerLetter' ? 'Offer Letter' : 'Surat resign'} anda sedia untuk dikongsi.</h2><p className="modal-copy">Sesiapa yang mempunyai link ini boleh melihat {activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offer letter' : 'surat resign'} anda. Data disimpan terus dalam link.</p><div className="share-input"><input value={shareUrl} readOnly /><button className="button button-primary" onClick={handleShare}>Salin link</button></div><span className="privacy-note"><Check size={14} /> Tiada akaun atau server diperlukan</span></div></div>}
       {toast && <div className="toast"><Check size={16} /> {toast}</div>}
     </div>
   )
-}
-
-function SavedDocuments({ documents, onOpen, onDelete }) {
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('all')
-  const filteredDocuments = documents.filter((document) => {
-    const matchesType = filter === 'all' || document.type === filter
-    return matchesType && document.name.toLowerCase().includes(query.toLowerCase())
-  })
-
-  return <div className="saved-content">
-    <div className="panel-heading"><div><p className="eyebrow">Dokumen anda</p><h1>Save List.</h1></div><div className="profile-chip"><Bookmark size={16} /></div></div>
-    <p className="editor-intro">Simpan versi resume dan surat resign untuk dibuka semula bila-bila masa.</p>
-    <div className="saved-controls"><label className="saved-search"><span className="sr-only">Cari dokumen</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari dokumen..." /></label><div className="saved-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Semua</button><button className={filter === 'resume' ? 'active' : ''} onClick={() => setFilter('resume')}>Resume</button><button className={filter === 'resignation' ? 'active' : ''} onClick={() => setFilter('resignation')}>Resign</button></div></div>
-    {documents.length === 0 ? <div className="saved-empty"><Bookmark size={28} /><h2>Belum ada dokumen disimpan</h2><p>Buka editor resume atau surat resign, kemudian tekan “Simpan ke list”.</p></div> : filteredDocuments.length === 0 ? <div className="saved-empty"><h2>Tiada dokumen dijumpai</h2><p>Cuba kata kunci atau filter yang lain.</p></div> : <div className="saved-grid">{filteredDocuments.map((document) => <article className="saved-card" key={document.id}><div className={`saved-card-icon ${document.type}`}><>{document.type === 'resume' ? <FileText size={20} /> : <FilePenLine size={20} />}</></div><div className="saved-card-body"><span className="saved-card-type">{document.type === 'resume' ? 'Resume' : 'Surat resign'}</span><h2>{document.name}</h2><p>Disimpan {new Date(document.savedAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div><div className="saved-card-actions"><button className="button button-primary" onClick={() => onOpen(document)}><Eye size={15} /> Buka</button><button className="icon-button delete" title="Padam dokumen" onClick={() => onDelete(document.id)}><Trash2 size={16} /></button></div></article>)}</div>}
-  </div>
 }
 
 function Field({ label, value, onChange, type = 'text', min, max }) {
@@ -481,6 +521,73 @@ function LegacyResignationPreview({ resignation }) {
 
 function ResignationPreview({ resignation, template, accent }) {
   return <article className={`resignation-paper resignation-${template}`} style={{ '--accent': accent }}><div className="letter-top"><span>SURAT LETAK JAWATAN</span><span>{resignation.date}</span></div><div className="letter-content"><p>{resignation.manager}</p><p>{resignation.company}</p><p className="letter-subject">Perkara: Notis peletakan jawatan</p><p>Dengan hormatnya saya, <strong>{resignation.fullName}</strong>, yang memegang jawatan sebagai <strong>{resignation.role}</strong> di {resignation.company}, ingin mengemukakan notis peletakan jawatan saya.</p><p>Peletakan jawatan ini berkuat kuasa dengan tempoh notis <strong>{resignation.notice}</strong>. Hari terakhir saya bekerja adalah pada <strong>{resignation.lastDay}</strong>.</p><p>{resignation.reason}</p><p>Saya bersedia membantu proses serah tugas bagi memastikan peralihan tanggungjawab berjalan dengan lancar.</p><p>Terima kasih atas segala kerjasama dan sokongan yang diberikan.</p><p>Yang benar,</p><div className="signature-space" /><p className="signature-name"><strong>{resignation.fullName}</strong><br />{resignation.role}</p></div><footer className="letter-footer"><span>{resignation.fullName}</span><span>{resignation.company}</span></footer></article>
+}
+
+function OfferLetterEditor({ offerLetter, update }) {
+  return <div className="resignation-editor">
+    <div className="panel-heading"><div><p className="eyebrow">Letter builder</p><h1>Offer Letter yang profesional.</h1></div><div className="profile-chip"><FilePenLine size={16} /></div></div>
+    <p className="editor-intro">Lengkapkan maklumat tawaran kerja anda di bawah.</p>
+    <section className="form-section" id="sec-offer-letter-info">
+      <div className="section-label"><span>01</span><h2>Maklumat surat</h2></div>
+      <div className="field-grid">
+        <Field label="Nama penuh" value={offerLetter.fullName} onChange={(value) => update('fullName', value)} />
+        <Field label="Jawatan yang ditawarkan" value={offerLetter.role} onChange={(value) => update('role', value)} />
+        <Field label="Nama syarikat" value={offerLetter.company} onChange={(value) => update('company', value)} />
+        <Field label="Kepada / manager" value={offerLetter.manager} onChange={(value) => update('manager', value)} />
+        <Field label="Email" value={offerLetter.email} onChange={(value) => update('email', value)} />
+        <Field label="Telefon" value={offerLetter.phone} onChange={(value) => update('phone', value)} />
+        <Field label="Alamat" value={offerLetter.address} onChange={(value) => update('address', value)} />
+        <Field label="Tarikh surat" value={offerLetter.date} onChange={(value) => update('date', value)} />
+        <Field label="Subjek" value={offerLetter.subject} onChange={(value) => update('subject', value)} />
+      </div>
+    </section>
+    <section className="form-section" id="sec-offer-letter-content">
+      <div className="section-label"><span>02</span><h2>Isi kandungan</h2></div>
+      <label className="field full-field"><span>Pengenalan</span><textarea value={offerLetter.intro} onChange={(event) => update('intro', event.target.value)} rows="3" /></label>
+      <label className="field full-field"><span>Perenggan utama</span><textarea value={offerLetter.body} onChange={(event) => update('body', event.target.value)} rows="5" /></label>
+      <label className="field full-field"><span>Penutup</span><textarea value={offerLetter.closing} onChange={(event) => update('closing', event.target.value)} rows="3" /></label>
+    </section>
+  </div>
+}
+
+function OfferLetterPreview({ offerLetter, accent }) {
+  return <article className="resignation-paper resignation-formal" style={{ '--accent': accent }}>
+    <div className="letter-top"><span>OFFER LETTER</span><span>{offerLetter.date}</span></div>
+    <div className="letter-content">
+      <p className="letter-recipient">{offerLetter.manager}</p>
+      <p>{offerLetter.company}</p>
+      <p className="letter-subject">Perkara: {offerLetter.subject}</p>
+      <p>Dengan hormatnya,</p>
+      <p>{offerLetter.intro}</p>
+      <p>{offerLetter.body}</p>
+      <p>{offerLetter.closing}</p>
+      <p>Yang benar,</p>
+      <div className="signature-space" />
+      <p className="signature-name"><strong>{offerLetter.fullName}</strong><br />{offerLetter.role}</p>
+      <div className="letter-contact-line">
+        <span>{offerLetter.email}</span>
+        <span>{offerLetter.phone}</span>
+        <span>{offerLetter.address}</span>
+      </div>
+    </div>
+    <footer className="letter-footer"><span>{offerLetter.fullName}</span><span>{offerLetter.company}</span></footer>
+  </article>
+}
+
+function SavedDocuments({ documents, onOpen, onDelete }) {
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('all')
+  const filteredDocuments = documents.filter((document) => {
+    const matchesType = filter === 'all' || document.type === filter
+    return matchesType && document.name.toLowerCase().includes(query.toLowerCase())
+  })
+
+  return <div className="saved-content">
+    <div className="panel-heading"><div><p className="eyebrow">Dokumen anda</p><h1>Save List.</h1></div><div className="profile-chip"><Bookmark size={16} /></div></div>
+    <p className="editor-intro">Simpan versi resume, surat resign dan offer letter untuk dibuka semula bila-bila masa.</p>
+    <div className="saved-controls"><label className="saved-search"><span className="sr-only">Cari dokumen</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari dokumen..." /></label><div className="saved-filters"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Semua</button><button className={filter === 'resume' ? 'active' : ''} onClick={() => setFilter('resume')}>Resume</button><button className={filter === 'resignation' ? 'active' : ''} onClick={() => setFilter('resignation')}>Resign</button><button className={filter === 'offerLetter' ? 'active' : ''} onClick={() => setFilter('offerLetter')}>Offer Letter</button></div></div>
+    {documents.length === 0 ? <div className="saved-empty"><Bookmark size={28} /><h2>Belum ada dokumen disimpan</h2><p>Buka editor resume, surat resign atau offer letter, kemudian tekan “Simpan ke list”.</p></div> : filteredDocuments.length === 0 ? <div className="saved-empty"><h2>Tiada dokumen dijumpai</h2><p>Cuba kata kunci atau filter yang lain.</p></div> : <div className="saved-grid">{filteredDocuments.map((document) => <article className="saved-card" key={document.id}><div className={`saved-card-icon ${document.type}`}><>{document.type === 'resume' ? <FileText size={20} /> : <FilePenLine size={20} />}</></div><div className="saved-card-body"><span className="saved-card-type">{document.type === 'resume' ? 'Resume' : document.type === 'offerLetter' ? 'Offer Letter' : 'Surat resign'}</span><h2>{document.name}</h2><p>Disimpan {new Date(document.savedAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div><div className="saved-card-actions"><button className="button button-primary" onClick={() => onOpen(document)}><Eye size={15} /> Buka</button><button className="icon-button delete" title="Padam dokumen" onClick={() => onDelete(document.id)}><Trash2 size={16} /></button></div></article>)}</div>}
+  </div>
 }
 
 createRoot(document.getElementById('root')).render(<App />)
