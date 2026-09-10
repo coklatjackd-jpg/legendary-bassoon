@@ -147,6 +147,12 @@ function loadOfferLetter() {
   }
 }
 
+async function requestDocuments(path = '', options) {
+  const response = await fetch(`/api/documents${path}`, options)
+  if (!response.ok) throw new Error('Database request failed')
+  return response.status === 204 ? null : response.json()
+}
+
 function App() {
   const [resume, setResume] = useState(loadResume)
   const [resignation, setResignation] = useState(loadResignation)
@@ -197,6 +203,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem('resume-studio-saved-documents', JSON.stringify(savedDocuments))
   }, [savedDocuments])
+
+  useEffect(() => {
+    requestDocuments()
+      .then((documents) => setSavedDocuments(documents))
+      .catch(() => setToast('Database tidak tersedia. Data lokal masih digunakan.'))
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -278,7 +290,7 @@ function App() {
     }
   }
 
-  const saveCurrentDocument = () => {
+  const saveCurrentDocument = async () => {
     const type = activeView === 'resume' ? 'resume' : activeView === 'offerLetter' ? 'offerLetter' : 'resignation'
     const data = type === 'resume' ? resume : type === 'offerLetter' ? offerLetter : resignation
     const name = type === 'resume'
@@ -287,7 +299,18 @@ function App() {
         ? `${offerLetter.company || 'Offer Letter'} · ${offerLetter.fullName || 'Tanpa nama'}`
         : `${resignation.company || 'Surat resign'} · ${resignation.fullName || 'Tanpa nama'}`
     const document = { id: savedDocumentId || `${type}-${Date.now()}`, type, name, data: JSON.parse(JSON.stringify(data)), template: type === 'resume' ? template : type === 'offerLetter' ? 'formal' : resignationTemplate, accent: type === 'resume' ? accent : type === 'offerLetter' ? accent : resignationAccent, savedAt: new Date().toISOString() }
-    setSavedDocuments((current) => savedDocumentId ? current.map((item) => item.id === savedDocumentId ? document : item) : [document, ...current])
+    const isUpdate = Boolean(savedDocumentId)
+    setSavedDocuments((current) => isUpdate ? current.map((item) => item.id === savedDocumentId ? document : item) : [document, ...current])
+    try {
+      const savedDocument = await requestDocuments(isUpdate ? `/${savedDocumentId}` : '', {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(document),
+      })
+      setSavedDocuments((current) => isUpdate ? current.map((item) => item.id === savedDocument.id ? savedDocument : item) : [savedDocument, ...current.filter((item) => item.id !== savedDocument.id)])
+    } catch {
+      setToast('Dokumen disimpan secara lokal. Database tidak tersedia.')
+    }
     setResume(initialResume)
     setResignation(initialResignation)
     setOfferLetter(initialOfferLetter)
@@ -323,10 +346,15 @@ function App() {
     setToast('Dokumen dibuka semula')
   }
 
-  const deleteSavedDocument = (id) => {
+  const deleteSavedDocument = async (id) => {
     setSavedDocuments((current) => current.filter((document) => document.id !== id))
     if (savedDocumentId === id) setSavedDocumentId(null)
     setToast('Dokumen dibuang dari senarai')
+    try {
+      await requestDocuments(`/${id}`, { method: 'DELETE' })
+    } catch {
+      setToast('Dokumen dibuang secara lokal. Database tidak tersedia.')
+    }
   }
 
   const goToSection = (id) => {

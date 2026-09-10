@@ -9,4 +9,18 @@ npm install
 npm run dev
 ```
 
-Buka URL yang dipaparkan oleh Vite. Data editor disimpan menggunakan `localStorage`. Link share mengandungi data resume yang telah dienkod dalam hash URL, jadi tiada backend diperlukan untuk demo ini.
+Buka URL yang dipaparkan oleh Vite. Data editor disimpan menggunakan `localStorage`, manakala dokumen dalam `Save List` disimpan ke PostgreSQL melalui `DATABASE_URL` dalam `.env`. Link share mengandungi data resume yang telah dienkod dalam hash URL.
+
+### Database
+
+Pastikan `.env` mengandungi:
+
+```env
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+```
+
+Server API akan mencipta jadual `documents` secara automatik pada sambungan pertama. Jangan letakkan `DATABASE_URL` dalam kod frontend atau commit fail `.env`.
+
+### Railway
+
+Railway akan menggunakan `npm run build` untuk build dan `npm start` untuk menjalankan aplikasi. Tambah `DATABASE_URL` di **Project Settings > Variables** menggunakan connection string PostgreSQL Neon. Selepas deploy, buka domain Railway yang diberikan.
