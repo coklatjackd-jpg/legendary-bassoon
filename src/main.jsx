@@ -226,6 +226,15 @@ function App() {
     }
   }
 
+  const resetResignation = () => {
+    if (window.confirm('Reset surat resign kepada contoh asal?')) {
+      setResignation(initialResignation)
+      setResignationTemplate('formal')
+      setResignationAccent(colors[0].value)
+      setToast('Surat resign dikembalikan ke contoh asal')
+    }
+  }
+
   const saveCurrentDocument = () => {
     const type = activeView === 'resume' ? 'resume' : 'resignation'
     const data = type === 'resume' ? resume : resignation
@@ -381,9 +390,17 @@ function App() {
             <div className="preview-nav-actions">
               <span className="a4-label">A4 · 1 halaman</span>
               <div className="preview-buttons">
-                <button className="button button-ghost icon-only-button" title={savedDocumentId ? 'Kemas kini senarai' : 'Simpan ke list'} onClick={saveCurrentDocument}><Bookmark size={16} /></button>
-                {activeView === 'resume' && <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResume}><RotateCcw size={16} /></button>}
-                <button className="button button-share button-icon-no-bg icon-only-button" title="Kongsi" onClick={() => setShareOpen(true)}><Link2 size={16} /></button>
+                {!isSharedView && (
+                  <button className="button button-ghost icon-only-button" title={savedDocumentId ? 'Kemas kini senarai' : 'Simpan ke list'} onClick={saveCurrentDocument}><Bookmark size={16} /></button>
+                )}
+                {!isSharedView && (activeView === 'resume' ? (
+                  <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResume}><RotateCcw size={16} /></button>
+                ) : (
+                  <button className="button button-ghost icon-only-button" title="Reset" onClick={resetResignation}><RotateCcw size={16} /></button>
+                ))}
+                {!isSharedView && (
+                  <button className="button button-share button-icon-no-bg icon-only-button" title="Kongsi" onClick={() => setShareOpen(true)}><Link2 size={16} /></button>
+                )}
                 <button className="button button-primary button-icon-no-bg icon-only-button" title="PDF / Print" onClick={() => window.print()}><Printer size={16} /></button>
               </div>
             </div>
